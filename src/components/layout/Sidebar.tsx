@@ -29,7 +29,7 @@ const navItems: { route: string; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, toggleSidebar, theme, toggleTheme, budgetAlerts } = useStore();
+  const { sidebarOpen, toggleSidebar, setSidebarOpen, theme, toggleTheme, budgetAlerts } = useStore();
   const [showSignOut, setShowSignOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function Sidebar() {
   const activeAlerts = budgetAlerts.filter((a) => !a.dismissed);
 
   const handleNavClick = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) toggleSidebar();
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
   };
 
   const openAddTransaction = () => {
@@ -62,7 +62,7 @@ export default function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-30 bg-black/50 md:hidden"
-            onClick={toggleSidebar}
+            onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
@@ -185,7 +185,10 @@ export default function Sidebar() {
         <div className="p-3 border-t space-y-1" style={{ borderColor: 'var(--glass-border)' }}>
           {/* Theme Toggle */}
           <button
-            onClick={toggleTheme}
+            onClick={() => {
+              toggleTheme();
+              if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+            }}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-[var(--surface-hover)] ${sidebarOpen ? 'w-full' : 'w-full justify-center'
               }`}
           >
@@ -230,7 +233,10 @@ export default function Sidebar() {
 
           {/* Sign Out */}
           <button
-            onClick={() => setShowSignOut(true)}
+            onClick={() => {
+              setShowSignOut(true);
+              if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+            }}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-expense/10 text-[var(--muted)] hover:text-expense ${sidebarOpen ? 'w-full' : 'w-full justify-center'
               }`}
           >

@@ -5,7 +5,7 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { formatCurrency, formatDateShort } from '@/utils/formatters';
 import { CATEGORY_COLORS } from '@/data/mockData';
-import Badge from '@/components/common/Badge';
+import Badge from '@/components/ui/Badge';
 import { useRouter } from 'next/navigation';
 
 export default function RecentTransactions() {
@@ -43,9 +43,8 @@ export default function RecentTransactions() {
             className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-[var(--surface-hover)]"
           >
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                tx.type === 'income' ? 'bg-income/10' : 'bg-expense/10'
-              }`}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === 'income' ? 'bg-income/10' : 'bg-expense/10'
+                }`}
             >
               {tx.type === 'income' ? (
                 <ArrowUpRight size={18} className="text-income" />
@@ -65,9 +64,8 @@ export default function RecentTransactions() {
             </div>
 
             <p
-              className={`text-sm font-semibold flex-shrink-0 ${
-                tx.type === 'income' ? 'text-income' : 'text-expense'
-              }`}
+              className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-income' : 'text-expense'
+                }`}
             >
               {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
             </p>

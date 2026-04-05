@@ -23,8 +23,8 @@ import { Transaction } from '@/types';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { calculateTotalIncome, calculateTotalExpenses } from '@/utils/calculations';
 import { CATEGORY_COLORS, CATEGORIES } from '@/data/mockData';
-import Badge from '@/components/common/Badge';
-import EmptyState from '@/components/common/EmptyState';
+import Badge from '@/components/ui/Badge';
+import EmptyState from '@/components/ui/EmptyState';
 import TransactionModal from './TransactionModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -189,10 +189,25 @@ export default function TransactionList() {
       >
         {/* Left - Title & Stats */}
         <div className="flex-1 glass-card p-6">
-          <h2 className="text-xl font-bold mb-1">Transaction Ledger</h2>
-          <p className="text-sm text-[var(--muted)] mb-4">
-            Review and manage your capital flows across all accounts.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-xl font-bold mb-1">Transaction Ledger</h2>
+              <p className="text-sm text-[var(--muted)]">
+                Review and manage your capital flows across all accounts.
+              </p>
+            </div>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('openAddTransaction'));
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+              >
+                <Plus size={16} />
+                Add Transaction
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-3">
             <div className="px-4 py-2.5 rounded-xl bg-income/10 border border-income/20">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Total Inflow</p>

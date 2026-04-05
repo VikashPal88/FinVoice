@@ -17,7 +17,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import ToggleSwitch from '@/components/common/ToggleSwitch';
+import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -128,8 +128,8 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setRole('admin')}
                   className={`px-5 py-2 text-sm font-medium transition-all ${role === 'admin'
-                      ? 'bg-[var(--foreground)] text-[var(--background)]'
-                      : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]'
+                    ? 'bg-[var(--foreground)] text-[var(--background)]'
+                    : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]'
                     }`}
                 >
                   Admin
@@ -137,8 +137,8 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setRole('viewer')}
                   className={`px-5 py-2 text-sm font-medium transition-all ${role === 'viewer'
-                      ? 'bg-[var(--foreground)] text-[var(--background)]'
-                      : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]'
+                    ? 'bg-[var(--foreground)] text-[var(--background)]'
+                    : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]'
                     }`}
                 >
                   Viewer
@@ -396,15 +396,14 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                       <span className="text-sm font-medium truncate">{cat.name}</span>
-                      <span className={`text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${
-                        cat.type === 'income' ? 'text-income bg-income/10' : 'text-expense bg-expense/10'
-                      }`}>
+                      <span className={`text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${cat.type === 'income' ? 'text-income bg-income/10' : 'text-expense bg-expense/10'
+                        }`}>
                         {cat.type}
                       </span>
                     </div>
                     {isAdmin && (
                       <button
-                        onClick={() => { if(confirm('Delete this category?')) deleteCategory(cat.id); }}
+                        onClick={() => { if (confirm('Delete this category?')) deleteCategory(cat.id); }}
                         className="p-1.5 rounded-md text-[var(--muted)] hover:text-expense hover:bg-expense/10 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                         title="Delete category"
                       >

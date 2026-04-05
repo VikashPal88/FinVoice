@@ -18,7 +18,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import SignOutModal from '@/components/common/SignOutModal';
+import SignOutModal from '@/components/ui/SignOutModal';
 
 const navItems: { route: string; label: string; icon: React.ReactNode }[] = [
   { route: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -107,7 +107,7 @@ export default function Sidebar() {
         </div>
 
         {/* New Transaction Button */}
-        <div className="px-3 pt-4 pb-2">
+        {/* <div className="px-3 pt-4 pb-2">
           {sidebarOpen ? (
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -129,7 +129,7 @@ export default function Sidebar() {
               <Plus size={18} />
             </motion.button>
           )}
-        </div>
+        </div> */}
 
         {/* Navigation */}
         <nav className="flex-1 py-2 px-3 space-y-1">
@@ -142,8 +142,8 @@ export default function Sidebar() {
                 href={item.route}
                 onClick={handleNavClick}
                 className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]'
                   }`}
               >
                 {isActive && (

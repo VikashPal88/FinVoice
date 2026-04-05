@@ -20,7 +20,7 @@ import { useStore } from '@/store/useStore';
 import { Account } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 import { ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/data/mockData';
-import EmptyState from '@/components/common/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function AccountsPage() {
   const { accounts, transactions, addAccount, editAccount, deleteAccount, role, budgetAlerts, dismissBudgetAlert, setDefaultAccount } = useStore();
@@ -110,9 +110,8 @@ export default function AccountsPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className={`glass-card p-4 border-l-4 ${
-                    isOver ? 'border-l-red-500 bg-red-500/5' : 'border-l-amber-500 bg-amber-500/5'
-                  }`}
+                  className={`glass-card p-4 border-l-4 ${isOver ? 'border-l-red-500 bg-red-500/5' : 'border-l-amber-500 bg-amber-500/5'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${isOver ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
@@ -335,8 +334,8 @@ export default function AccountsPage() {
                           backgroundColor: isOver
                             ? '#ef4444'
                             : isWarning
-                            ? '#f59e0b'
-                            : account.color,
+                              ? '#f59e0b'
+                              : account.color,
                         }}
                       />
                     </div>
@@ -411,11 +410,10 @@ export default function AccountsPage() {
                         key={icon}
                         type="button"
                         onClick={() => setForm({ ...form, icon })}
-                        className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${
-                          form.icon === icon
+                        className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${form.icon === icon
                             ? 'bg-primary/20 ring-2 ring-primary scale-110'
                             : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)]'
-                        }`}
+                          }`}
                       >
                         {icon}
                       </button>
@@ -432,9 +430,8 @@ export default function AccountsPage() {
                         key={color}
                         type="button"
                         onClick={() => setForm({ ...form, color })}
-                        className={`w-8 h-8 rounded-lg transition-all ${
-                          form.color === color ? 'ring-2 ring-white scale-110' : ''
-                        }`}
+                        className={`w-8 h-8 rounded-lg transition-all ${form.color === color ? 'ring-2 ring-white scale-110' : ''
+                          }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}

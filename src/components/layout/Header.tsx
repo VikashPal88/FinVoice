@@ -16,8 +16,8 @@ import {
   X,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import RoleToggle from '@/components/common/RoleToggle';
-import SignOutModal from '@/components/common/SignOutModal';
+import RoleToggle from '@/components/ui/RoleToggle';
+import SignOutModal from '@/components/ui/SignOutModal';
 
 const pageLabels: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'Dashboard', subtitle: 'Overview of your financial activity' },
@@ -35,7 +35,7 @@ export default function Header() {
   const [showSignOut, setShowSignOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
-  
+
   const pathname = usePathname();
   const router = useRouter();
   const page = pageLabels[pathname] || pageLabels['/'];

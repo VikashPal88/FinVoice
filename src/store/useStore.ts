@@ -108,7 +108,7 @@ export const useStore = create<AppStoreState>()(
   persist(
     (set, get) => ({
       // Initial State
-      theme: 'light',
+      theme: 'dark',
       sidebarOpen: true,
       isMobileNavOpen: false,
       filters: defaultFilters,

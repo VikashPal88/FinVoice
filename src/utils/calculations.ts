@@ -1,20 +1,28 @@
 import { Transaction, MonthlySummary, CategoryBreakdown } from '@/types';
 import { CATEGORY_COLORS } from '@/data/mockData';
+import { normalizeTransactionAmount, roundMoney } from '@/lib/money';
+
+function normalizeTransactions(transactions: Transaction[]) {
+  return transactions.map((transaction) => ({
+    ...transaction,
+    amount: normalizeTransactionAmount(transaction.amount),
+  }));
+}
 
 export function calculateTotalIncome(transactions: Transaction[]): number {
-  return transactions
+  return roundMoney(normalizeTransactions(transactions)
     .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + t.amount, 0));
 }
 
 export function calculateTotalExpenses(transactions: Transaction[]): number {
-  return transactions
+  return roundMoney(normalizeTransactions(transactions)
     .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + t.amount, 0));
 }
 
 export function calculateBalance(transactions: Transaction[]): number {
-  return calculateTotalIncome(transactions) - calculateTotalExpenses(transactions);
+  return roundMoney(calculateTotalIncome(transactions) - calculateTotalExpenses(transactions));
 }
 
 export function calculateSavingsRate(transactions: Transaction[]): number {
@@ -27,13 +35,13 @@ export function calculateSavingsRate(transactions: Transaction[]): number {
 export function getMonthlySummaries(transactions: Transaction[]): MonthlySummary[] {
   const map = new Map<string, { income: number; expenses: number }>();
 
-  transactions.forEach((t) => {
+  normalizeTransactions(transactions).forEach((t) => {
     const month = t.date.substring(0, 7); // YYYY-MM
     const existing = map.get(month) || { income: 0, expenses: 0 };
     if (t.type === 'income') {
-      existing.income += t.amount;
+      existing.income = roundMoney(existing.income + t.amount);
     } else {
-      existing.expenses += t.amount;
+      existing.expenses = roundMoney(existing.expenses + t.amount);
     }
     map.set(month, existing);
   });
@@ -44,17 +52,17 @@ export function getMonthlySummaries(transactions: Transaction[]): MonthlySummary
       month,
       income: data.income,
       expenses: data.expenses,
-      balance: data.income - data.expenses,
+      balance: roundMoney(data.income - data.expenses),
     }));
 }
 
 export function getCategoryBreakdown(transactions: Transaction[]): CategoryBreakdown[] {
-  const expenses = transactions.filter((t) => t.type === 'expense');
-  const total = expenses.reduce((sum, t) => sum + t.amount, 0);
+  const expenses = normalizeTransactions(transactions).filter((t) => t.type === 'expense');
+  const total = roundMoney(expenses.reduce((sum, t) => sum + t.amount, 0));
   const map = new Map<string, number>();
 
   expenses.forEach((t) => {
-    map.set(t.category, (map.get(t.category) || 0) + t.amount);
+    map.set(t.category, roundMoney((map.get(t.category) || 0) + t.amount));
   });
 
   return Array.from(map.entries())
@@ -81,15 +89,15 @@ export function getMonthlyChange(summaries: MonthlySummary[]): number {
 }
 
 export function getAverageDailySpend(transactions: Transaction[]): number {
-  const expenses = transactions.filter((t) => t.type === 'expense');
+  const expenses = normalizeTransactions(transactions).filter((t) => t.type === 'expense');
   if (expenses.length === 0) return 0;
 
   const dates = expenses.map((t) => new Date(t.date).getTime());
   const minDate = Math.min(...dates);
   const maxDate = Math.max(...dates);
   const days = Math.max(1, Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)));
-  const total = expenses.reduce((sum, t) => sum + t.amount, 0);
-  return total / days;
+  const total = roundMoney(expenses.reduce((sum, t) => sum + t.amount, 0));
+  return roundMoney(total / days);
 }
 
 export function getIncomeExpenseRatio(transactions: Transaction[]): number {

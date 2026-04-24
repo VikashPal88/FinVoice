@@ -1,29 +1,36 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useStore } from '@/store/useStore';
-import TopCategories from '@/components/insights/TopCategories';
-import MonthlyComparison from '@/components/insights/MonthlyComparison';
-import SpendingInsights from '@/components/insights/SpendingInsights';
-import ExpenseTrendChart from '@/components/insights/ExpenseTrendChart';
-import AIInsightsCard from '@/components/insights/AIInsightsCard';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
-import { fetchJsonCached } from '@/lib/client-fetch';
-import { Account, Transaction } from '@/types';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useStore } from "@/store/useStore";
+import TopCategories from "@/components/insights/TopCategories";
+import MonthlyComparison from "@/components/insights/MonthlyComparison";
+import SpendingInsights from "@/components/insights/SpendingInsights";
+import ExpenseTrendChart from "@/components/insights/ExpenseTrendChart";
+import AIInsightsCard from "@/components/insights/AIInsightsCard";
+import WeekdaySpendingPattern from "@/components/insights/WeekdaySpendingPattern";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { fetchJsonCached } from "@/lib/client-fetch";
+import { Account, Transaction } from "@/types";
 
 export default function InsightsPage() {
   const { accounts, setAccounts, setTransactions } = useStore();
-  const [accountId, setAccountId] = useState<string>('all');
+  const [accountId, setAccountId] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [accData, transData] = await Promise.all([
-          fetchJsonCached<Account[]>('/api/accounts'),
-          fetchJsonCached<Transaction[]>('/api/transactions')
+          fetchJsonCached<Account[]>("/api/accounts"),
+          fetchJsonCached<Transaction[]>("/api/transactions"),
         ]);
 
         setAccounts(accData);
@@ -34,7 +41,7 @@ export default function InsightsPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, [setAccounts, setTransactions]);
 
@@ -59,17 +66,28 @@ export default function InsightsPage() {
             Deep dive into your financial habits and trends.
           </p>
         </div>
-        
-        <Select value={accountId} onValueChange={(val: string) => setAccountId(val)}>
-          <SelectTrigger className="w-[200px] h-[44px] rounded-xl text-sm border bg-[var(--surface)] text-[var(--foreground)]" style={{ borderColor: 'var(--glass-border)' }}>
+
+        <Select
+          value={accountId}
+          onValueChange={(val: string) => setAccountId(val)}
+        >
+          <SelectTrigger
+            className="w-[200px] h-[44px] rounded-xl text-sm border bg-[var(--surface)] text-[var(--foreground)]"
+            style={{ borderColor: "var(--glass-border)" }}
+          >
             <SelectValue placeholder="All Accounts">
-              {accountId === 'all' ? 'All Accounts' : accounts.find(a => a.id === accountId)?.name || 'All Accounts'}
+              {accountId === "all"
+                ? "All Accounts"
+                : accounts.find((a) => a.id === accountId)?.name ||
+                  "All Accounts"}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-[var(--dropdown-bg)] border-[var(--glass-border)] text-[var(--foreground)]">
             <SelectItem value="all">All Accounts</SelectItem>
-            {accounts.map(acc => (
-              <SelectItem key={acc.id} value={acc.id}>{acc.icon} {acc.name}</SelectItem>
+            {accounts.map((acc) => (
+              <SelectItem key={acc.id} value={acc.id}>
+                {acc.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -83,10 +101,10 @@ export default function InsightsPage() {
       <ExpenseTrendChart accountId={accountId} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WeekdaySpendingPattern accountId={accountId} />
         <TopCategories accountId={accountId} />
-        <MonthlyComparison accountId={accountId} />
       </div>
+      <MonthlyComparison accountId={accountId} />
     </motion.div>
   );
 }
-

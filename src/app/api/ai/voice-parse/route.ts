@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { parseVoiceInput } from "@/lib/gemini";
+import { isGeminiServiceUnavailable, parseVoiceInput } from "@/lib/gemini";
 
 export async function POST(req: Request) {
     try {
@@ -33,6 +33,13 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         console.error("[VOICE_PARSE]", error);
+        if (isGeminiServiceUnavailable(error)) {
+            return NextResponse.json(
+                { error: "AI service is temporarily busy. Please try again in a moment." },
+                { status: 503 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Failed to parse voice input" },
             { status: 500 }

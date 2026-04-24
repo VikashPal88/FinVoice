@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { getTransactionImpact, normalizeTransactionAmount, roundMoney } from "@/lib/money";
 import { PrismaDb } from "@/lib/prismaDB";
 
 const serializeDecimal = (obj: any) => {
@@ -72,26 +73,54 @@ export async function PUT(
             return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
         }
 
-        // Calculate balance adjustments
-        const oldImpact = existing.type === "EXPENSE" ? -Number(existing.amount) : Number(existing.amount);
-        const newType = body.type || existing.type;
-        const newAmount = body.amount != null ? Number(body.amount) : Number(existing.amount);
-        const newImpact = newType === "EXPENSE" ? -newAmount : newAmount;
-        const balanceChange = newImpact - oldImpact;
+        const normalizedData = {
+            ...body,
+            amount: body.amount != null ? normalizeTransactionAmount(body.amount) : Number(existing.amount),
+            type: body.type ? (String(body.type).toUpperCase() === "EXPENSE" ? "EXPENSE" : "INCOME") : existing.type,
+            accountId: body.accountId || existing.accountId,
+        };
+        const oldImpact = getTransactionImpact(existing.type, existing.amount);
+        const newImpact = getTransactionImpact(normalizedData.type, normalizedData.amount);
+        const previousAccountId = existing.accountId;
+        const nextAccountId = normalizedData.accountId;
 
-        const accountId = body.accountId || existing.accountId;
+        if (nextAccountId !== previousAccountId) {
+            const targetAccount = await PrismaDb.financialAccount.findUnique({
+                where: {
+                    id: nextAccountId,
+                    userId: session.user.id,
+                },
+                select: { id: true },
+            });
+
+            if (!targetAccount) {
+                return NextResponse.json({ error: "Target account not found" }, { status: 404 });
+            }
+        }
 
         const updatedTransaction = await PrismaDb.$transaction(async (tx) => {
             const updated = await tx.transaction.update({
                 where: { id: transactionId },
-                data: body,
+                data: normalizedData,
             });
 
-            // Update account balance
-            if (balanceChange !== 0) {
+            if (previousAccountId === nextAccountId) {
+                const balanceChange = roundMoney(newImpact - oldImpact);
+                if (balanceChange !== 0) {
+                    await tx.financialAccount.update({
+                        where: { id: nextAccountId },
+                        data: { balance: { increment: balanceChange } },
+                    });
+                }
+            } else {
                 await tx.financialAccount.update({
-                    where: { id: accountId },
-                    data: { balance: { increment: balanceChange } },
+                    where: { id: previousAccountId },
+                    data: { balance: { increment: roundMoney(-oldImpact) } },
+                });
+
+                await tx.financialAccount.update({
+                    where: { id: nextAccountId },
+                    data: { balance: { increment: newImpact } },
                 });
             }
 
@@ -133,10 +162,7 @@ export async function DELETE(
         }
 
         // Reverse the balance impact
-        const originalImpact = transaction.type === "EXPENSE"
-            ? -Number(transaction.amount)
-            : Number(transaction.amount);
-        const reversalAmount = -originalImpact;
+        const reversalAmount = roundMoney(-getTransactionImpact(transaction.type, transaction.amount));
 
         await PrismaDb.$transaction(async (tx) => {
             await tx.transaction.delete({

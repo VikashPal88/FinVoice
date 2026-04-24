@@ -15,6 +15,7 @@ import {
   Search,
   X,
   MoreHorizontal,
+  Check,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { Transaction } from "@/types";
@@ -106,6 +107,7 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [allCategories, setAllCategories] = useState<CategoryItem[]>([]);
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>([]);
 
   // Fetch transactions from API
   const fetchTransactions = async (force = false) => {
@@ -139,12 +141,34 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
+        setSelectedTransactionIds((prev) => prev.filter((selectedId) => selectedId !== id));
         invalidateClientFetch('/api/transactions', '/api/accounts', '/api/dashboard', '/api/budget');
         fetchTransactions(true);
         fetchAccounts(true); // Refresh balances
       }
     } catch (err) {
       console.error('Failed to delete transaction', err);
+    }
+  };
+
+  const deleteSelectedTransactions = async () => {
+    if (selectedTransactionIds.length === 0) return;
+
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionIds: selectedTransactionIds }),
+      });
+
+      if (res.ok) {
+        setSelectedTransactionIds([]);
+        invalidateClientFetch('/api/transactions', '/api/accounts', '/api/dashboard', '/api/budget');
+        fetchTransactions(true);
+        fetchAccounts(true);
+      }
+    } catch (err) {
+      console.error('Failed to delete selected transactions', err);
     }
   };
 
@@ -184,6 +208,11 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
 
   const totalIncome = calculateTotalIncome(transactions);
   const totalExpenses = calculateTotalExpenses(transactions);
+
+  useEffect(() => {
+    const existingIds = new Set(transactions.map((tx) => tx.id));
+    setSelectedTransactionIds((prev) => prev.filter((id) => existingIds.has(id)));
+  }, [transactions]);
 
   // Listen for custom event from sidebar/header "Add Transaction" button
   useEffect(() => {
@@ -264,6 +293,26 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
+  const allVisibleSelected =
+    paginated.length > 0 &&
+    paginated.every((tx) => selectedTransactionIds.includes(tx.id));
+
+  const toggleTransactionSelection = (id: string) => {
+    setSelectedTransactionIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const toggleVisibleSelection = () => {
+    const visibleIds = paginated.map((tx) => tx.id);
+    setSelectedTransactionIds((prev) => {
+      if (allVisibleSelected) {
+        return prev.filter((id) => !visibleIds.includes(id));
+      }
+
+      return Array.from(new Set([...prev, ...visibleIds]));
+    });
+  };
 
   // Export CSV
   const handleExport = () => {
@@ -533,11 +582,57 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
         </button>
       </motion.div>
 
+      {selectedTransactionIds.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3"
+        >
+          <p className="text-sm font-medium text-[var(--foreground)]">
+            {selectedTransactionIds.length} transaction{selectedTransactionIds.length > 1 ? "s" : ""} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedTransactionIds([])}
+              className="rounded-xl border px-3 py-2 text-xs font-medium transition-colors hover:bg-white/40"
+              style={{ borderColor: "rgba(249, 115, 22, 0.25)" }}
+            >
+              Clear Selection
+            </button>
+            <button
+              onClick={() => {
+                if (confirm(`Delete ${selectedTransactionIds.length} selected transaction${selectedTransactionIds.length > 1 ? "s" : ""}?`)) {
+                  deleteSelectedTransactions();
+                }
+              }}
+              className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-hover"
+            >
+              <Trash2 size={14} />
+              Delete Selected
+            </button>
+          </div>
+        </motion.div>
+      )}
+
 
       {/* Table Header */}
       {paginated.length > 0 && (
         <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 text-[10px] uppercase tracking-widest font-semibold text-[var(--muted)]">
-          <div className="col-span-2">Date</div>
+          <div className="col-span-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleVisibleSelection}
+              className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                allVisibleSelected
+                  ? "bg-primary border-primary text-white"
+                  : "border-primary/40 bg-primary/5 text-transparent"
+              }`}
+              aria-label={allVisibleSelected ? "Deselect visible transactions" : "Select visible transactions"}
+            >
+              <Check size={12} />
+            </button>
+            <span>Date</span>
+          </div>
           <div className="col-span-4">Recipient / Source</div>
           <div className="col-span-2">Category</div>
           <div className="col-span-2">Type</div>
@@ -570,7 +665,20 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
               >
                 {/* Date */}
                 <div className="md:col-span-2 flex md:block items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleTransactionSelection(tx.id)}
+                      className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                        selectedTransactionIds.includes(tx.id)
+                          ? "bg-primary border-primary text-white"
+                          : "border-primary/40 bg-primary/5 text-transparent"
+                      }`}
+                      aria-label={selectedTransactionIds.includes(tx.id) ? "Deselect transaction" : "Select transaction"}
+                    >
+                      <Check size={12} />
+                    </button>
+                    <div>
                     <p className="text-sm font-medium">{formatDate(tx.date)}</p>
                     <p className="text-[11px] text-[var(--muted)] hidden md:block">
                       {new Date(tx.date).toLocaleTimeString("en-IN", {
@@ -579,6 +687,7 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
                         hour12: true,
                       })}
                     </p>
+                    </div>
                   </div>
                   {/* Mobile amount */}
                   <p

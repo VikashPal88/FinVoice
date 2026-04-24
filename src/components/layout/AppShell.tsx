@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "./Sidebar";
@@ -8,12 +7,8 @@ import Header from "./Header";
 import { useStore } from "@/store/useStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { theme, sidebarOpen } = useStore();
+  const { sidebarOpen } = useStore();
   const pathname = usePathname();
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
 
   return (
     <div className="flex h-[100dvh]">
@@ -24,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         <Header />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-grid">
+        <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 md:px-6 md:py-6 bg-grid">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

@@ -48,25 +48,48 @@ export function ScanReceiptDrawer({
     setLoading(true);
     setError(null);
     setResult(null);
+    console.log("[SCAN_RECEIPT] Starting scan...");
 
     try {
       const formData = new FormData();
       formData.append("receipt", file);
+      console.log("[SCAN_RECEIPT] File size:", file.size, "type:", file.type);
 
       const res = await fetch("/api/ai/scan-receipt", {
         method: "POST",
         body: formData,
       });
 
+      console.log("[SCAN_RECEIPT] Response status:", res.status);
       const json = await res.json();
-      if (!res.ok || !json.success) {
+      console.log("[SCAN_RECEIPT] Response:", json);
+
+      if (!res.ok) {
+        const errorMsg =
+          json.error || `HTTP ${res.status}: Failed to scan receipt`;
+        console.error("[SCAN_RECEIPT] Error:", errorMsg);
+        setError(errorMsg);
+        return;
+      }
+
+      if (!json.success) {
+        console.error("[SCAN_RECEIPT] API returned success=false");
         setError(json.error || "Failed to scan receipt");
         return;
       }
 
+      console.log(
+        "[SCAN_RECEIPT] Success! Transactions:",
+        json.data?.transactions?.length || 0,
+      );
       setResult(json.data);
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (error) {
+      console.error("[SCAN_RECEIPT] Exception:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Network error. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -102,7 +125,7 @@ export function ScanReceiptDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed  inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
           />
           <motion.div
             key="scan-sheet"
@@ -110,7 +133,7 @@ export function ScanReceiptDrawer({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 350 }}
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] flex flex-col rounded-t-3xl shadow-2xl bg-white dark:bg-neutral-950 border-t border-gray-200 dark:border-neutral-800"
+            className="fixed -bottom-7 left-0 right-0 z-50 max-h-[90vh] flex flex-col rounded-t-3xl shadow-2xl bg-white dark:bg-neutral-950 border-t border-gray-200 dark:border-neutral-800"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}

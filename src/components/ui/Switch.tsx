@@ -8,8 +8,11 @@ import { cn } from "@/lib/utils";
 const Switch = React.forwardRef(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-90 data-[state=checked]:bg-black data-[state=unchecked]:bg-input",
-      className,
+      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-90",
+      // Light mode: Black | Dark mode: White (or a bright primary color)
+      "data-[state=checked]:bg-primary data-[state=checked]:dark:bg-white",
+      // Ensure the track is visible when off
+      "data-[state=unchecked]:bg-zinc-200 data-[state=unchecked]:dark:bg-zinc-700",
     )}
     {...props}
     ref={ref}

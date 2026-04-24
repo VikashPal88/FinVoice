@@ -13,18 +13,8 @@ import {
   X,
 } from "lucide-react";
 import { Switch } from "./Switch";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./popover";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Added missing Interface definition
@@ -90,14 +80,17 @@ export function AccountCard({
   return (
     <>
       <Card
-        className="hover:shadow-md transition-shadow group relative cursor-pointer"
+        className="hover:shadow-md transition-shadow group relative cursor-pointer bg-[var(--dropdown-bg)]"
         onClick={handleCardClick}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium capitalize">
             {name}
           </CardTitle>
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Default toggle */}
             <div
               className="flex items-center gap-1.5"
@@ -174,8 +167,8 @@ export function AccountCard({
                     isOver
                       ? "text-red-500"
                       : isWarning
-                      ? "text-amber-500"
-                      : "text-muted-foreground"
+                        ? "text-amber-500"
+                        : "text-muted-foreground"
                   }`}
                 >
                   ₹{monthlySpent.toLocaleString("en-IN")} / ₹
@@ -193,8 +186,8 @@ export function AccountCard({
                     backgroundColor: isOver
                       ? "#ef4444"
                       : isWarning
-                      ? "#f59e0b"
-                      : "#22c55e",
+                        ? "#f59e0b"
+                        : "#22c55e",
                   }}
                 />
               </div>
@@ -232,7 +225,10 @@ export function AccountCard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}
+            style={{
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              backdropFilter: "blur(4px)",
+            }}
             onClick={() => !isDeleting && setShowDeleteConfirm(false)}
           >
             <motion.div
@@ -242,8 +238,8 @@ export function AccountCard({
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm rounded-2xl p-6 shadow-2xl border"
               style={{
-                backgroundColor: 'var(--dropdown-bg, #ffffff)',
-                borderColor: 'var(--glass-border, #e5e7eb)',
+                backgroundColor: "var(--dropdown-bg, #ffffff)",
+                borderColor: "var(--glass-border, #e5e7eb)",
               }}
             >
               {/* Warning Icon */}
@@ -260,11 +256,13 @@ export function AccountCard({
 
               {/* Description */}
               <p className="text-sm text-center text-[var(--muted)] mt-2 leading-relaxed">
-                Are you sure you want to delete <strong className="text-[var(--foreground)]">{name}</strong>?
+                Are you sure you want to delete{" "}
+                <strong className="text-[var(--foreground)]">{name}</strong>?
               </p>
               <div className="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
                 <p className="text-xs text-red-600 dark:text-red-400 text-center font-medium">
-                  ⚠️ This will permanently delete the account and all its transactions. This action cannot be undone.
+                  ⚠️ This will permanently delete the account and all its
+                  transactions. This action cannot be undone.
                 </p>
               </div>
 
@@ -272,11 +270,15 @@ export function AccountCard({
               <div className="mt-4 p-3 rounded-xl bg-[var(--surface)] border border-[var(--glass-border)]">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[var(--muted)]">Balance</span>
-                  <span className="font-semibold text-[var(--foreground)]">₹{parseFloat(balance).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-[var(--foreground)]">
+                    ₹{parseFloat(balance).toLocaleString("en-IN")}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1.5">
                   <span className="text-[var(--muted)]">Transactions</span>
-                  <span className="font-semibold text-[var(--foreground)]">{stats?.txCount || 0}</span>
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {stats?.txCount || 0}
+                  </span>
                 </div>
               </div>
 

@@ -3,43 +3,150 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const safetySettings = [
-    {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
 ];
+
+const RETRYABLE_GEMINI_STATUS_CODES = new Set([429, 500, 503, 504]);
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getGeminiErrorStatus(error: unknown) {
+  if (!error || typeof error !== "object") return undefined;
+
+  const maybeStatus = (error as { status?: unknown }).status;
+  return typeof maybeStatus === "number" ? maybeStatus : undefined;
+}
+
+function isRetryableGeminiError(error: unknown) {
+  const status = getGeminiErrorStatus(error);
+  return status != null && RETRYABLE_GEMINI_STATUS_CODES.has(status);
+}
+
+async function generateContentWithRetry(
+  model: ReturnType<typeof getGeminiModel>,
+  prompt: string | any[],
+  label: string,
+  maxAttempts = 3,
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryableGeminiError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+
+      const delayMs = 400 * attempt;
+      console.warn(`[${label}] Gemini temporary failure on attempt ${attempt}/${maxAttempts}. Retrying in ${delayMs}ms...`, error);
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError;
+}
+
+export function isGeminiServiceUnavailable(error: unknown) {
+  return isRetryableGeminiError(error);
+}
 
 /**
  * Get the Gemini model for text generation
  */
 export function getGeminiModel() {
-    return genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        safetySettings,
-    });
+  return genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    safetySettings,
+  });
 }
 
 /**
  * Get the Gemini model for vision (image analysis)
  */
 export function getGeminiVisionModel() {
-    return genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        safetySettings,
-    });
+  return genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    safetySettings,
+  });
+}
+
+function cleanGeminiJson(rawText: string) {
+  return rawText
+    .replace(/\r\n/g, "\n")
+    .replace(/```json\n?/g, "")
+    .replace(/```javascript\n?/g, "")
+    .replace(/```\n?/g, "")
+    .replace(/^[^{]*({[\s\S]*})[^}]*$/g, "$1")
+    .trim();
+}
+
+function parseGeminiJson(rawText: string) {
+  const cleaned = cleanGeminiJson(rawText);
+  return JSON.parse(cleaned);
+}
+
+function normalizeTransaction(tx: any, defaultDate: string) {
+  const amountRaw = tx?.amount;
+  let amount = 0;
+
+  if (typeof amountRaw === "string") {
+    const digits = amountRaw.replace(/[^0-9.\-]/g, "");
+    amount = parseFloat(digits || "0");
+  } else if (typeof amountRaw === "number") {
+    amount = amountRaw;
+  }
+
+  if (Number.isNaN(amount)) {
+    amount = 0;
+  }
+
+  const type = tx?.type?.toString()?.toUpperCase() === "INCOME" ? "INCOME" : "EXPENSE";
+
+  return {
+    amount: Math.abs(amount),
+    description: tx?.description?.toString() || "Unknown",
+    date: tx?.date?.toString() || defaultDate,
+    category: tx?.category?.toString() || "Other",
+    type,
+  };
+}
+
+function normalizeStatementTransactions(transactions: any[], defaultDate: string) {
+  if (!Array.isArray(transactions)) return [];
+  return transactions.map((tx) => normalizeTransaction(tx, defaultDate));
+}
+
+function buildStatementSummary(transactions: ReturnType<typeof normalizeStatementTransactions>) {
+  return {
+    totalTransactions: transactions.length,
+    totalIncome: transactions
+      .filter((tx) => tx.type === "INCOME")
+      .reduce((sum, tx) => sum + tx.amount, 0),
+    totalExpense: transactions
+      .filter((tx) => tx.type === "EXPENSE")
+      .reduce((sum, tx) => sum + tx.amount, 0),
+  };
 }
 
 /**
  * Parse receipt image using Gemini Vision
  */
 export async function parseReceiptImage(base64Image: string, mimeType: string) {
-    const model = getGeminiVisionModel();
+  const model = getGeminiVisionModel();
 
-    const prompt = `You are a financial receipt parser. Analyze this receipt image and extract transaction details.
+  const prompt = `You are a financial receipt parser. Analyze this receipt image and extract transaction details.
 
 Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
 {
@@ -64,30 +171,37 @@ Important:
 - Date should be YYYY-MM-DD format
 - Pick the most appropriate category from the list`;
 
-    const result = await model.generateContent([
-        prompt,
-        {
-            inlineData: {
-                mimeType,
-                data: base64Image,
-            },
-        },
-    ]);
+  const result = await generateContentWithRetry(model, [
+    prompt,
+    {
+      inlineData: {
+        mimeType,
+        data: base64Image,
+      },
+    },
+  ], "PARSE_RECEIPT");
 
-    const text = result.response.text().trim();
-    // Clean potential markdown wrapping
-    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+  const text = result.response.text().trim();
+  console.log("[PARSE_RECEIPT] Raw response:", text.substring(0, 500));
+  const parsed = parseGeminiJson(text);
+
+  return {
+    transactions: Array.isArray(parsed.transactions)
+      ? parsed.transactions.map((tx: any) => normalizeTransaction(tx, new Date().toISOString().split("T")[0]))
+      : [],
+    confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0,
+    rawText: parsed.rawText?.toString() || "",
+  };
 }
 
 /**
  * Parse voice/natural language input into transaction data
  */
 export async function parseVoiceInput(transcript: string) {
-    const model = getGeminiModel();
-    const today = new Date().toISOString().split("T")[0];
+  const model = getGeminiModel();
+  const today = new Date().toISOString().split("T")[0];
 
-    const prompt = `You are a financial transaction parser. Convert this spoken/natural language input into structured transaction data.
+  const prompt = `You are a financial transaction parser. Convert this spoken/natural language input into structured transaction data.
 
 Input: "${transcript}"
 
@@ -110,31 +224,45 @@ Examples of parsing:
 If you cannot parse the input, return:
 {"amount": 0, "description": "", "date": "${today}", "category": "Other", "type": "EXPENSE", "confidence": 0}`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+  const result = await generateContentWithRetry(model, prompt, "VOICE_INPUT");
+  const text = result.response.text().trim();
+  console.log("[VOICE_INPUT] Raw response:", text.substring(0, 500));
+  const parsed = parseGeminiJson(text);
+
+  return {
+    amount: typeof parsed.amount === "number" ? parsed.amount : parseFloat(parsed.amount?.toString().replace(/[^0-9.\-]/g, "") || "0"),
+    description: parsed.description?.toString() || "",
+    date: parsed.date?.toString() || today,
+    category: parsed.category?.toString() || "Other",
+    type: parsed.type?.toString().toUpperCase() === "INCOME" ? "INCOME" : "EXPENSE",
+    confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0,
+  };
 }
 
 /**
  * Parse bank statement (CSV text or image) into multiple transactions
  */
-export async function parseStatement(content: string, isImage: boolean = false, base64?: string, mimeType?: string) {
-    const model = isImage ? getGeminiVisionModel() : getGeminiModel();
-    const today = new Date().toISOString().split("T")[0];
+export async function parseStatement(
+  content: string,
+  isBinaryDocument: boolean = false,
+  base64?: string,
+  mimeType?: string,
+) {
+  const model = isBinaryDocument ? getGeminiVisionModel() : getGeminiModel();
+  const today = new Date().toISOString().split("T")[0];
 
-    const prompt = `You are a bank statement parser. Extract all transactions from this ${isImage ? "bank statement image" : "bank statement text/CSV"}.
+  const prompt = `You are a professional bank statement parser. Extract ALL transactions from this ${isBinaryDocument ? "bank statement document" : "bank statement text/CSV"}.
 
-${isImage ? "" : `Statement Content:\n${content}`}
+${isBinaryDocument ? "" : `Statement Content:\n${content}`}
 
-Return ONLY a valid JSON object (no markdown, no code blocks) with this structure:
+Return ONLY a valid JSON object (no markdown code blocks, JUST raw JSON) with this exact structure:
 {
   "transactions": [
     {
-      "amount": <number - absolute amount>,
+      "amount": <number - absolute amount, positive values only>,
       "description": "<string - transaction narration/description>",
       "date": "<string - YYYY-MM-DD format>",
-      "category": "<string - best guess from: Food & Dining, Shopping, Transportation, Entertainment, Healthcare, Education, Utilities, Groceries, Salary, Freelance, Investment, Rental, EMI & Loans, Insurance, Other>",
+      "category": "<string - one of: Food & Dining, Shopping, Transportation, Entertainment, Healthcare, Education, Utilities, Groceries, Salary, Freelance, Investment, Rental, EMI & Loans, Insurance, Other>",
       "type": "<string - INCOME or EXPENSE>"
     }
   ],
@@ -150,40 +278,71 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with this structur
   }
 }
 
-Important:
-- Credits/deposits/salary are INCOME, debits/withdrawals/purchases are EXPENSE
-- Use absolute amounts (no negatives)
-- Guess the best category based on the description
-- If date year is missing, assume current year`;
+CRITICAL RULES:
+1. Extract EVERY transaction from the statement - do NOT skip any
+2. Credits/deposits/salary/refunds are INCOME (type: "INCOME")
+3. Debits/withdrawals/purchases/fees/payments are EXPENSE (type: "EXPENSE")
+4. Use ABSOLUTE amounts (positive numbers only, e.g., 100 not -100)
+5. Categorize based on description or merchant name
+6. If year is missing, assume ${today.split("-")[0]}
+7. Summary totals MUST match the extracted transactions
+8. If no transactions found, return empty array and zeros in summary
+9. Return VALID JSON only - no explanations, no code blocks, no markdown`;
 
+  try {
     const parts: any[] = [prompt];
-    if (isImage && base64 && mimeType) {
-        parts.push({
-            inlineData: { mimeType, data: base64 },
-        });
+    if (isBinaryDocument && base64 && mimeType) {
+      parts.push({
+        inlineData: { mimeType, data: base64 },
+      });
     }
 
-    const result = await model.generateContent(parts);
+    console.log("[PARSE_STATEMENT] Calling Gemini API...");
+    const result = await generateContentWithRetry(model, parts, "PARSE_STATEMENT");
     const text = result.response.text().trim();
-    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+
+    console.log("[PARSE_STATEMENT] Raw response:", text.substring(0, 500));
+
+    // Clean up response
+    let cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```javascript\n?/g, "")
+      .replace(/```\n?/g, "")
+      .replace(/^[^{]*({[^]*})[^}]*$/g, "$1")
+      .trim();
+
+    console.log("[PARSE_STATEMENT] Cleaned response:", cleaned.substring(0, 500));
+
+    const parsed = JSON.parse(cleaned);
+    const normalizedTransactions = normalizeStatementTransactions(parsed.transactions, today);
+
+    parsed.transactions = normalizedTransactions;
+    parsed.summary = buildStatementSummary(normalizedTransactions);
+    parsed.accountInfo = parsed.accountInfo ?? {};
+
+    console.log("[PARSE_STATEMENT] Parsed successfully:", parsed.summary);
+    return parsed;
+  } catch (error) {
+    console.error("[PARSE_STATEMENT] JSON Parse Error:", error);
+    throw new Error(`Failed to parse statement response: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
 }
 
 /**
  * Generate AI-powered financial insights and optimization advice
  */
 export async function generateFinancialInsights(financialData: {
-    totalIncome: number;
-    totalExpenses: number;
-    savingsRate: number;
-    categoryBreakdown: { category: string; amount: number; percentage: number }[];
-    monthlyTrend: { month: string; income: number; expenses: number }[];
-    accountBudgets: { name: string; budget: number; spent: number }[];
-    topMerchants: { name: string; amount: number; count: number }[];
+  totalIncome: number;
+  totalExpenses: number;
+  savingsRate: number;
+  categoryBreakdown: { category: string; amount: number; percentage: number }[];
+  monthlyTrend: { month: string; income: number; expenses: number }[];
+  accountBudgets: { name: string; budget: number; spent: number }[];
+  topMerchants: { name: string; amount: number; count: number }[];
 }) {
-    const model = getGeminiModel();
+  const model = getGeminiModel();
 
-    const prompt = `You are an expert financial advisor AI for a personal finance dashboard. Analyze this user's financial data and provide actionable insights.
+  const prompt = `You are an expert financial advisor AI for a personal finance dashboard. Analyze this user's financial data and provide actionable insights.
 
 Financial Data:
 ${JSON.stringify(financialData, null, 2)}
@@ -225,8 +384,8 @@ Rules:
 - Suggest realistic budget allocations
 - If savings rate is low, prioritize savings advice`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+  const result = await generateContentWithRetry(model, prompt, "FINANCIAL_INSIGHTS");
+  const text = result.response.text().trim();
+  const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  return JSON.parse(cleaned);
 }

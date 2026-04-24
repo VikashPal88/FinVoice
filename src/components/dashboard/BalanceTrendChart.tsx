@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -11,18 +11,20 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from 'recharts';
-import { getMonthlySummaries } from '@/utils/calculations';
-import { formatCurrency, formatMonth } from '@/utils/formatters';
+} from "recharts";
+import { getMonthlySummaries } from "@/utils/calculations";
+import { formatCurrency, formatMonth } from "@/utils/formatters";
 
 export default function BalanceTrendChart({ accounts }: { accounts: any[] }) {
-  const transactions = accounts?.flatMap((a: any) =>
-    a.transactions?.map((t: any) => ({
-      ...t,
-      type: t.type.toLowerCase(),
-      accountId: a.id
-    })) || []
-  ) || [];
+  const transactions =
+    accounts?.flatMap(
+      (a: any) =>
+        a.transactions?.map((t: any) => ({
+          ...t,
+          type: t.type.toLowerCase(),
+          accountId: a.id,
+        })) || [],
+    ) || [];
 
   const summaries = getMonthlySummaries(transactions);
   const data = summaries.slice(-8).map((s) => ({
@@ -65,8 +67,12 @@ export default function BalanceTrendChart({ accounts }: { accounts: any[] }) {
     >
       <div className="flex items-center justify-between mb-1">
         <div>
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">Total Income</h3>
-          <p className="text-xs text-[var(--muted)]">View your income in a certain period of time</p>
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">
+            Total Income
+          </h3>
+          <p className="text-xs text-[var(--muted)]">
+            View your income in a certain period of time
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
@@ -74,30 +80,41 @@ export default function BalanceTrendChart({ accounts }: { accounts: any[] }) {
             Profit
           </div>
           <div className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            <div className="w-2.5 h-2.5 rounded-sm bg-gray-800" />
+            <div className="w-2.5 h-2.5 rounded-sm bg-white" />
             Loss
           </div>
         </div>
       </div>
 
-      <div className="h-[280px] mt-4">
+      <div className="h-[200px] sm:h-[240px] md:h-[280px] lg:h-[300px] mt-4">
         {mounted && (
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -10 }} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <BarChart
+              data={data}
+              margin={{ top: 5, right: 5, bottom: 5, left: -10 }}
+              barGap={4}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#f0f0f0"
+                vertical={false}
+              />
               <XAxis
                 dataKey="monthLabel"
-                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                tick={{ fontSize: 11, fill: "#9CA3AF" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                tick={{ fontSize: 11, fill: "#9CA3AF" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(249, 115, 22, 0.05)' }} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: "rgba(249, 115, 22, 0.05)" }}
+              />
               <Bar
                 dataKey="profit"
                 name="Profit"

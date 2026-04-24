@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="dark"
+      data-theme="light"
       className={cn("h-full", inter.variable, "font-sans", geist.variable)}
       suppressHydrationWarning
     >

@@ -108,7 +108,7 @@ export const useStore = create<AppStoreState>()(
   persist(
     (set, get) => ({
       // Initial State
-      theme: 'dark',
+      theme: 'light',
       sidebarOpen: true,
       isMobileNavOpen: false,
       filters: defaultFilters,
@@ -120,7 +120,7 @@ export const useStore = create<AppStoreState>()(
 
       // UI Actions
       setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+      toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setIsMobileNavOpen: (open) => set({ isMobileNavOpen: open }),

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
+import { getTransactionImpact, normalizeTransactionAmount, roundMoney } from "@/lib/money";
 import { PrismaDb } from "@/lib/prismaDB";
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 const serializeDecimal = (obj: any) => {
@@ -82,6 +82,72 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        const transactionsInput = Array.isArray(body) ? body : body?.transactions;
+        const isBulkCreate = Array.isArray(transactionsInput);
+
+        if (isBulkCreate) {
+            if (transactionsInput.length === 0) {
+                return NextResponse.json({ error: "No transactions provided" }, { status: 400 });
+            }
+
+            const accountIds = Array.from(new Set(transactionsInput.map((tx: any) => tx?.accountId).filter(Boolean)));
+            const accounts = await PrismaDb.financialAccount.findMany({
+                where: { userId: user.id, id: { in: accountIds } },
+                select: { id: true, balance: true }
+            });
+
+            if (accountIds.length !== accounts.length) {
+                return NextResponse.json({ error: "One or more accounts were not found" }, { status: 404 });
+            }
+
+            const accountBalanceChanges: Record<string, number> = {};
+            for (const tx of transactionsInput) {
+                if (!tx?.accountId || tx?.amount == null || !tx?.description) {
+                    return NextResponse.json({ error: "Invalid transaction payload" }, { status: 400 });
+                }
+
+                const impact = getTransactionImpact(tx.type, tx.amount);
+                accountBalanceChanges[tx.accountId] = roundMoney((accountBalanceChanges[tx.accountId] ?? 0) + impact);
+            }
+
+            const createdTransactions = await PrismaDb.$transaction(async (tx) => {
+                const created = [];
+
+                for (const transactionInput of transactionsInput) {
+                    const normalizedTransaction = {
+                        ...transactionInput,
+                        amount: normalizeTransactionAmount(transactionInput.amount),
+                        type: String(transactionInput.type).toUpperCase() === "EXPENSE" ? "EXPENSE" : "INCOME",
+                    };
+                    const newTransaction = await tx.transaction.create({
+                        data: {
+                            ...normalizedTransaction,
+                            userId: user.id
+                        }
+                    });
+                    created.push(newTransaction);
+                }
+
+                for (const [accountId, change] of Object.entries(accountBalanceChanges)) {
+                    await tx.financialAccount.update({
+                        where: { id: accountId },
+                        data: { balance: { increment: change } }
+                    });
+                }
+
+                return created;
+            });
+
+            return NextResponse.json(
+                {
+                    success: true,
+                    data: createdTransactions.map((transaction) => serializeDecimal(transaction)),
+                    createdCount: createdTransactions.length,
+                },
+                { status: 201 }
+            );
+        }
+
         // Fetch Account
         const account = await PrismaDb.financialAccount.findUnique({
             where: { id: body.accountId, userId: user.id }
@@ -92,20 +158,25 @@ export async function POST(req: Request) {
         }
 
         // Balance calculation
-        const balanceChange = body.type === "EXPENSE" ? -body.amount : body.amount;
-        const newBalance = Number(account.balance) + balanceChange;
+        const normalizedBody = {
+            ...body,
+            amount: normalizeTransactionAmount(body.amount),
+            type: String(body.type).toUpperCase() === "EXPENSE" ? "EXPENSE" : "INCOME",
+        };
+        const balanceChange = getTransactionImpact(normalizedBody.type, normalizedBody.amount);
+        const newBalance = roundMoney(Number(account.balance) + balanceChange);
 
         // Create transaction + update balance
         const transaction = await PrismaDb.$transaction(async (tx) => {
             const newTransaction = await tx.transaction.create({
                 data: {
-                    ...body,
+                    ...normalizedBody,
                     userId: user.id
                 }
             })
 
             await tx.financialAccount.update({
-                where: { id: body.accountId },
+                where: { id: normalizedBody.accountId },
                 data: { balance: newBalance }
             })
 

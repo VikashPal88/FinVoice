@@ -80,7 +80,7 @@ export default function DashboardPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 max-w-7xl mx-auto"
+      className="space-y-4 sm:space-y-6 w-full"
     >
       {/* Greeting Header */}
       {/* <div className="mb-8">
@@ -95,7 +95,7 @@ export default function DashboardPage() {
       />
 
       {/* Row 2: Budget */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <BalanceTrendChart accounts={data.financialAccounts} />
         <SpendingBreakdown accounts={data.financialAccounts} />
       </div>

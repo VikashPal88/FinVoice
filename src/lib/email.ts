@@ -1,66 +1,68 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_FROM,
-        pass: process.env.EMAIL_APP_PASSWORD,
-    },
+  host: "smtp-relay.brevo.com", // Brevo SMTP server
+  port: 587,                   // Recommended port
+  secure: false,               // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_FROM,
+    pass: process.env.EMAIL_APP_PASSWORD,
+  },
 });
 
 interface BudgetAlertData {
-    userName: string;
-    userEmail: string;
-    accountName: string;
-    budgetAmount: number;
-    spentAmount: number;
-    percentage: number;
-    topCategories: { category: string; amount: number; percentage: number }[];
-    recentTransactions: { description: string; amount: number; date: string; category: string }[];
+  userName: string;
+  userEmail: string;
+  accountName: string;
+  budgetAmount: number;
+  spentAmount: number;
+  percentage: number;
+  topCategories: { category: string; amount: number; percentage: number }[];
+  recentTransactions: { description: string; amount: number; date: string; category: string }[];
 }
 
 /**
  * Send a budget alert email when spending exceeds 90% of the budget
  */
 export async function sendBudgetAlertEmail(data: BudgetAlertData) {
-    if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
-        console.warn("[EMAIL] Email credentials not configured, skipping budget alert email");
-        return { success: false, reason: "Email not configured" };
-    }
+  if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
+    console.warn("[EMAIL] Email credentials not configured, skipping budget alert email");
+    return { success: false, reason: "Email not configured" };
+  }
 
-    const remaining = data.budgetAmount - data.spentAmount;
-    const isExceeded = data.percentage >= 100;
+  const remaining = data.budgetAmount - data.spentAmount;
+  const isExceeded = data.percentage >= 100;
 
-    const categoryRows = data.topCategories
-        .slice(0, 5)
-        .map(
-            (c) => `
+  const categoryRows = data.topCategories
+    .slice(0, 5)
+    .map(
+      (c) => `
       <tr>
         <td style="padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #374151;">${c.category}</td>
         <td style="padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #374151; text-align: right; font-weight: 600;">₹${c.amount.toLocaleString("en-IN")}</td>
         <td style="padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #6b7280; text-align: right;">${c.percentage.toFixed(1)}%</td>
       </tr>
     `
-        )
-        .join("");
+    )
+    .join("");
 
-    const recentTxRows = data.recentTransactions
-        .slice(0, 5)
-        .map(
-            (tx) => `
+  const recentTxRows = data.recentTransactions
+    .slice(0, 5)
+    .map(
+      (tx) => `
       <tr>
         <td style="padding: 8px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #374151;">${tx.description}</td>
         <td style="padding: 8px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #ef4444; text-align: right; font-weight: 600;">-₹${tx.amount.toLocaleString("en-IN")}</td>
         <td style="padding: 8px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #6b7280; text-align: right;">${tx.category}</td>
       </tr>
     `
-        )
-        .join("");
+    )
+    .join("");
 
-    const progressColor = isExceeded ? "#ef4444" : data.percentage >= 95 ? "#f59e0b" : "#f97316";
-    const progressWidth = Math.min(data.percentage, 100);
+  const progressColor = isExceeded ? "#ef4444" : data.percentage >= 95 ? "#f59e0b" : "#f97316";
+  const progressWidth = Math.min(data.percentage, 100);
 
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -88,9 +90,9 @@ export async function sendBudgetAlertEmail(data: BudgetAlertData) {
       <p style="font-size: 15px; color: #374151; margin: 0 0 24px;">
         Hi <strong>${data.userName}</strong>,<br><br>
         ${isExceeded
-            ? `You've exceeded your monthly budget of <strong>₹${data.budgetAmount.toLocaleString("en-IN")}</strong> on your <strong>${data.accountName}</strong> account.`
-            : `You've used <strong>${data.percentage.toFixed(1)}%</strong> of your monthly budget on your <strong>${data.accountName}</strong> account. Only <strong>₹${remaining.toLocaleString("en-IN")}</strong> remaining.`
-        }
+      ? `You've exceeded your monthly budget of <strong>₹${data.budgetAmount.toLocaleString("en-IN")}</strong> on your <strong>${data.accountName}</strong> account.`
+      : `You've used <strong>${data.percentage.toFixed(1)}%</strong> of your monthly budget on your <strong>${data.accountName}</strong> account. Only <strong>₹${remaining.toLocaleString("en-IN")}</strong> remaining.`
+    }
       </p>
 
       <!-- Budget Progress Card -->
@@ -175,18 +177,18 @@ export async function sendBudgetAlertEmail(data: BudgetAlertData) {
 </body>
 </html>`;
 
-    try {
-        await transporter.sendMail({
-            from: `"Finance Dashboard" <${process.env.EMAIL_FROM}>`,
-            to: data.userEmail,
-            subject: `${isExceeded ? "🚨 Budget Exceeded" : "⚠️ Budget Alert"} — ${data.accountName} Account (${data.percentage.toFixed(0)}%)`,
-            html,
-        });
+  try {
+    await transporter.sendMail({
+      from: `"Finance Dashboard" <${process.env.EMAIL_FROM}>`,
+      to: data.userEmail,
+      subject: `${isExceeded ? "🚨 Budget Exceeded" : "⚠️ Budget Alert"} — ${data.accountName} Account (${data.percentage.toFixed(0)}%)`,
+      html,
+    });
 
-        console.log(`[EMAIL] Budget alert sent to ${data.userEmail} for ${data.accountName} (${data.percentage.toFixed(1)}%)`);
-        return { success: true };
-    } catch (error) {
-        console.error("[EMAIL] Failed to send budget alert:", error);
-        return { success: false, error };
-    }
+    console.log(`[EMAIL] Budget alert sent to ${data.userEmail} for ${data.accountName} (${data.percentage.toFixed(1)}%)`);
+    return { success: true };
+  } catch (error) {
+    console.error("[EMAIL] Failed to send budget alert:", error);
+    return { success: false, error };
+  }
 }

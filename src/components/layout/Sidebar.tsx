@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -16,20 +16,35 @@ import {
   HelpCircle,
   LogOut,
   Wallet,
-} from 'lucide-react';
-import { useStore } from '@/store/useStore';
-import SignOutModal from '@/components/ui/SignOutModal';
+} from "lucide-react";
+import { useStore } from "@/store/useStore";
+import SignOutModal from "@/components/ui/SignOutModal";
 
 const navItems: { route: string; label: string; icon: React.ReactNode }[] = [
-  { route: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-  { route: '/transactions', label: 'Transactions', icon: <ArrowLeftRight size={20} /> },
-  { route: '/accounts', label: 'Accounts', icon: <Wallet size={20} /> },
-  { route: '/insights', label: 'Insights', icon: <Lightbulb size={20} /> },
-  { route: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+  {
+    route: "/dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={20} />,
+  },
+  {
+    route: "/transactions",
+    label: "Transactions",
+    icon: <ArrowLeftRight size={20} />,
+  },
+  { route: "/accounts", label: "Accounts", icon: <Wallet size={20} /> },
+  { route: "/insights", label: "Insights", icon: <Lightbulb size={20} /> },
+  { route: "/settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, toggleSidebar, setSidebarOpen, theme, toggleTheme, budgetAlerts } = useStore();
+  const {
+    sidebarOpen,
+    toggleSidebar,
+    setSidebarOpen,
+    theme,
+    toggleTheme,
+    budgetAlerts,
+  } = useStore();
   const [showSignOut, setShowSignOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -37,19 +52,23 @@ export default function Sidebar() {
   const activeAlerts = budgetAlerts.filter((a) => !a.dismissed);
 
   const handleNavClick = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 768)
+      setSidebarOpen(false);
   };
 
   const openAddTransaction = () => {
-    if (pathname !== '/transactions') {
-      router.push('/transactions');
+    if (pathname !== "/transactions") {
+      router.push("/transactions");
       setTimeout(() => {
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('openAddTransaction'));
+        if (typeof window !== "undefined")
+          window.dispatchEvent(new CustomEvent("openAddTransaction"));
       }, 100);
     } else {
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('openAddTransaction'));
+      if (typeof window !== "undefined")
+        window.dispatchEvent(new CustomEvent("openAddTransaction"));
     }
-    if (typeof window !== 'undefined' && window.innerWidth < 768) toggleSidebar();
+    if (typeof window !== "undefined" && window.innerWidth < 768)
+      toggleSidebar();
   };
 
   return (
@@ -69,14 +88,20 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-full flex flex-col border-r transition-all duration-300 bg-[var(--dropdown-bg)] md:bg-[var(--sidebar-bg)] ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64 md:translate-x-0 md:w-20'
-          }`}
+        className={`fixed top-0 left-0 z-40 h-full flex flex-col border-r transition-all duration-300 bg-[var(--dropdown-bg)] md:bg-[var(--sidebar-bg)] ${
+          sidebarOpen
+            ? "translate-x-0 w-64"
+            : "-translate-x-full w-64 md:translate-x-0 md:w-20"
+        }`}
         style={{
-          borderColor: 'var(--glass-border)',
+          borderColor: "var(--glass-border)",
         }}
       >
         {/* Logo */}
-        <div className={`relative flex items-center h-16 border-b transition-all duration-300 ${sidebarOpen ? 'px-4' : 'justify-center'}`} style={{ borderColor: 'var(--glass-border)' }}>
+        <div
+          className={`relative flex items-center h-16 border-b transition-all duration-300 ${sidebarOpen ? "px-4" : "justify-center"}`}
+          style={{ borderColor: "var(--glass-border)" }}
+        >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/20">
               <span className="text-white font-bold text-sm">₹</span>
@@ -85,12 +110,17 @@ export default function Sidebar() {
               {sidebarOpen && (
                 <motion.div
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
-                  className="overflow-hidden whitespace-nowrap"
+                  className="overflow-hidden whitespace-nowrap cursor-pointer"
+                  onClick={() => router.push(`dashboard`)}
                 >
-                  <h1 className="text-lg font-bold gradient-text tracking-tight">FinDash</h1>
-                  <p className="text-[10px] text-[var(--muted)] -mt-0.5 tracking-widest uppercase">Personal Finance</p>
+                  <h1 className="text-lg font-bold gradient-text tracking-tight">
+                    RupeeTrack
+                  </h1>
+                  <p className="text-[10px] text-[var(--muted)] -mt-0.5 tracking-widest uppercase">
+                    Personal Finance
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -98,9 +128,12 @@ export default function Sidebar() {
           <button
             onClick={toggleSidebar}
             className="absolute -right-[13px] p-1 rounded-full border bg-[var(--background)] transition-colors hover:bg-[var(--surface-hover)] hidden md:flex z-50 shadow-sm"
-            style={{ borderColor: 'var(--glass-border)' }}
+            style={{ borderColor: "var(--glass-border)" }}
           >
-            <motion.div animate={{ rotate: sidebarOpen ? 0 : 180 }} transition={{ duration: 0.2 }}>
+            <motion.div
+              animate={{ rotate: sidebarOpen ? 0 : 180 }}
+              transition={{ duration: 0.2 }}
+            >
               <ChevronLeft size={16} className="text-[var(--muted)]" />
             </motion.div>
           </button>
@@ -135,22 +168,24 @@ export default function Sidebar() {
         <nav className="flex-1 py-2 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.route;
-            const hasAlert = item.route === '/accounts' && activeAlerts.length > 0;
+            const hasAlert =
+              item.route === "/accounts" && activeAlerts.length > 0;
             return (
               <Link
                 key={item.route}
                 href={item.route}
                 onClick={handleNavClick}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]'
-                  }`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
+                }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActive"
                     className="absolute left-0 w-[3px] h-6 bg-primary rounded-r-full"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
                 <span className="flex-shrink-0 relative">
@@ -163,7 +198,7 @@ export default function Sidebar() {
                   {sidebarOpen && (
                     <motion.span
                       initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
+                      animate={{ opacity: 1, width: "auto" }}
                       exit={{ opacity: 0, width: 0 }}
                       className="overflow-hidden whitespace-nowrap flex-1 text-left"
                     >
@@ -173,7 +208,9 @@ export default function Sidebar() {
                 </AnimatePresence>
                 {hasAlert && sidebarOpen && (
                   <span className="w-5 h-5 rounded-full bg-expense/10 flex items-center justify-center">
-                    <span className="text-[9px] font-bold text-expense">{activeAlerts.length}</span>
+                    <span className="text-[9px] font-bold text-expense">
+                      {activeAlerts.length}
+                    </span>
                   </span>
                 )}
               </Link>
@@ -182,17 +219,22 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom Controls */}
-        <div className="p-3 border-t space-y-1" style={{ borderColor: 'var(--glass-border)' }}>
+        <div
+          className="p-3 border-t space-y-1"
+          style={{ borderColor: "var(--glass-border)" }}
+        >
           {/* Theme Toggle */}
           <button
             onClick={() => {
               toggleTheme();
-              if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+              if (typeof window !== "undefined" && window.innerWidth < 768)
+                setSidebarOpen(false);
             }}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-[var(--surface-hover)] ${sidebarOpen ? 'w-full' : 'w-full justify-center'
-              }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-[var(--surface-hover)] ${
+              sidebarOpen ? "w-full" : "w-full justify-center"
+            }`}
           >
-            {theme === 'dark' ? (
+            {theme === "dark" ? (
               <Sun size={18} className="text-amber-400 flex-shrink-0" />
             ) : (
               <Moon size={18} className="text-orange-400 flex-shrink-0" />
@@ -201,11 +243,11 @@ export default function Sidebar() {
               {sidebarOpen && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   className="overflow-hidden whitespace-nowrap text-[var(--muted)] text-sm"
                 >
-                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  {theme === "dark" ? "Light Mode" : "Dark Mode"}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -213,15 +255,16 @@ export default function Sidebar() {
 
           {/* Support */}
           <button
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-[var(--surface-hover)] text-[var(--muted)] ${sidebarOpen ? 'w-full' : 'w-full justify-center'
-              }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-[var(--surface-hover)] text-[var(--muted)] ${
+              sidebarOpen ? "w-full" : "w-full justify-center"
+            }`}
           >
             <HelpCircle size={18} className="flex-shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   className="overflow-hidden whitespace-nowrap"
                 >
@@ -235,17 +278,19 @@ export default function Sidebar() {
           <button
             onClick={() => {
               setShowSignOut(true);
-              if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+              if (typeof window !== "undefined" && window.innerWidth < 768)
+                setSidebarOpen(false);
             }}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-expense/10 text-[var(--muted)] hover:text-expense ${sidebarOpen ? 'w-full' : 'w-full justify-center'
-              }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-expense/10 text-[var(--muted)] hover:text-expense ${
+              sidebarOpen ? "w-full" : "w-full justify-center"
+            }`}
           >
             <LogOut size={18} className="flex-shrink-0" />
             <AnimatePresence>
               {sidebarOpen && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   className="overflow-hidden whitespace-nowrap"
                 >
@@ -258,7 +303,10 @@ export default function Sidebar() {
       </aside>
 
       {/* Sign Out Modal */}
-      <SignOutModal isOpen={showSignOut} onClose={() => setShowSignOut(false)} />
+      <SignOutModal
+        isOpen={showSignOut}
+        onClose={() => setShowSignOut(false)}
+      />
     </>
   );
 }

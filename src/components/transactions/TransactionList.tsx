@@ -94,12 +94,10 @@ interface TransactionListProps {
   initialAccountId?: string;
 }
 
-export default function TransactionList({ initialAccountId }: TransactionListProps) {
-  const {
-    filters,
-    setFilters,
-    resetFilters,
-  } = useStore();
+export default function TransactionList({
+  initialAccountId,
+}: TransactionListProps) {
+  const { filters, setFilters, resetFilters } = useStore();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -107,25 +105,33 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [allCategories, setAllCategories] = useState<CategoryItem[]>([]);
-  const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>([]);
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<
+    string[]
+  >([]);
 
   // Fetch transactions from API
   const fetchTransactions = async (force = false) => {
     try {
-      const data = await fetchJsonCached<Transaction[]>('/api/transactions', undefined, { force });
+      const data = await fetchJsonCached<Transaction[]>(
+        "/api/transactions",
+        undefined,
+        { force },
+      );
       setTransactions(data);
     } catch (err) {
-      console.error('Failed to fetch transactions', err);
+      console.error("Failed to fetch transactions", err);
     }
   };
 
   // Fetch accounts from API
   const fetchAccounts = async (force = false) => {
     try {
-      const data = await fetchJsonCached<any[]>('/api/accounts', undefined, { force });
+      const data = await fetchJsonCached<any[]>("/api/accounts", undefined, {
+        force,
+      });
       setAccounts(data);
     } catch (err) {
-      console.error('Failed to fetch accounts', err);
+      console.error("Failed to fetch accounts", err);
     }
   };
 
@@ -139,15 +145,22 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
   // Delete transaction via API
   const deleteTransaction = async (id: string) => {
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setSelectedTransactionIds((prev) => prev.filter((selectedId) => selectedId !== id));
-        invalidateClientFetch('/api/transactions', '/api/accounts', '/api/dashboard', '/api/budget');
+        setSelectedTransactionIds((prev) =>
+          prev.filter((selectedId) => selectedId !== id),
+        );
+        invalidateClientFetch(
+          "/api/transactions",
+          "/api/accounts",
+          "/api/dashboard",
+          "/api/budget",
+        );
         fetchTransactions(true);
         fetchAccounts(true); // Refresh balances
       }
     } catch (err) {
-      console.error('Failed to delete transaction', err);
+      console.error("Failed to delete transaction", err);
     }
   };
 
@@ -155,20 +168,25 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
     if (selectedTransactionIds.length === 0) return;
 
     try {
-      const res = await fetch('/api/transactions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transactionIds: selectedTransactionIds }),
       });
 
       if (res.ok) {
         setSelectedTransactionIds([]);
-        invalidateClientFetch('/api/transactions', '/api/accounts', '/api/dashboard', '/api/budget');
+        invalidateClientFetch(
+          "/api/transactions",
+          "/api/accounts",
+          "/api/dashboard",
+          "/api/budget",
+        );
         fetchTransactions(true);
         fetchAccounts(true);
       }
     } catch (err) {
-      console.error('Failed to delete selected transactions', err);
+      console.error("Failed to delete selected transactions", err);
     }
   };
 
@@ -199,7 +217,10 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
 
   // Build a combined color map: defaults + custom categories
   const categoryColorMap = useMemo(() => {
-    const map: Record<string, string> = { ...CATEGORY_COLORS, ...CATEGORY_COLOR_MAP };
+    const map: Record<string, string> = {
+      ...CATEGORY_COLORS,
+      ...CATEGORY_COLOR_MAP,
+    };
     for (const cat of allCategories) {
       if (cat.color) map[cat.name] = cat.color;
     }
@@ -211,7 +232,9 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
 
   useEffect(() => {
     const existingIds = new Set(transactions.map((tx) => tx.id));
-    setSelectedTransactionIds((prev) => prev.filter((id) => existingIds.has(id)));
+    setSelectedTransactionIds((prev) =>
+      prev.filter((id) => existingIds.has(id)),
+    );
   }, [transactions]);
 
   // Listen for custom event from sidebar/header "Add Transaction" button
@@ -227,17 +250,24 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
   // Listen for refresh event (fired after add/edit/delete)
   useEffect(() => {
     const handler = async () => {
-      invalidateClientFetch('/api/transactions', '/api/accounts', '/api/dashboard', '/api/budget');
+      invalidateClientFetch(
+        "/api/transactions",
+        "/api/accounts",
+        "/api/dashboard",
+        "/api/budget",
+      );
       try {
         const [transactionsData, accountsData] = await Promise.all([
-          fetchJsonCached<Transaction[]>('/api/transactions', undefined, { force: true }),
-          fetchJsonCached<any[]>('/api/accounts', undefined, { force: true }),
+          fetchJsonCached<Transaction[]>("/api/transactions", undefined, {
+            force: true,
+          }),
+          fetchJsonCached<any[]>("/api/accounts", undefined, { force: true }),
         ]);
 
         setTransactions(transactionsData);
         setAccounts(accountsData);
       } catch (err) {
-        console.error('Failed to refresh transactions', err);
+        console.error("Failed to refresh transactions", err);
       }
     };
     window.addEventListener("refreshTransactions", handler);
@@ -461,7 +491,10 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
             {allCategories.map((c) => (
               <SelectItem key={c.id} value={c.name}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: c.color }}
+                  />
                   {c.name}
                 </span>
               </SelectItem>
@@ -589,7 +622,8 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3"
         >
           <p className="text-sm font-medium text-[var(--foreground)]">
-            {selectedTransactionIds.length} transaction{selectedTransactionIds.length > 1 ? "s" : ""} selected
+            {selectedTransactionIds.length} transaction
+            {selectedTransactionIds.length > 1 ? "s" : ""} selected
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -601,7 +635,11 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
             </button>
             <button
               onClick={() => {
-                if (confirm(`Delete ${selectedTransactionIds.length} selected transaction${selectedTransactionIds.length > 1 ? "s" : ""}?`)) {
+                if (
+                  confirm(
+                    `Delete ${selectedTransactionIds.length} selected transaction${selectedTransactionIds.length > 1 ? "s" : ""}?`,
+                  )
+                ) {
                   deleteSelectedTransactions();
                 }
               }}
@@ -613,7 +651,6 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
           </div>
         </motion.div>
       )}
-
 
       {/* Table Header */}
       {paginated.length > 0 && (
@@ -627,7 +664,11 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
                   ? "bg-primary border-primary text-white"
                   : "border-primary/40 bg-primary/5 text-transparent"
               }`}
-              aria-label={allVisibleSelected ? "Deselect visible transactions" : "Select visible transactions"}
+              aria-label={
+                allVisibleSelected
+                  ? "Deselect visible transactions"
+                  : "Select visible transactions"
+              }
             >
               <Check size={12} />
             </button>
@@ -674,19 +715,25 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
                           ? "bg-primary border-primary text-white"
                           : "border-primary/40 bg-primary/5 text-transparent"
                       }`}
-                      aria-label={selectedTransactionIds.includes(tx.id) ? "Deselect transaction" : "Select transaction"}
+                      aria-label={
+                        selectedTransactionIds.includes(tx.id)
+                          ? "Deselect transaction"
+                          : "Select transaction"
+                      }
                     >
                       <Check size={12} />
                     </button>
                     <div>
-                    <p className="text-sm font-medium">{formatDate(tx.date)}</p>
-                    <p className="text-[11px] text-[var(--muted)] hidden md:block">
-                      {new Date(tx.date).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </p>
+                      <p className="text-sm font-medium">
+                        {formatDate(tx.date)}
+                      </p>
+                      <p className="text-[11px] text-[var(--muted)] hidden md:block">
+                        {new Date(tx.date).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </p>
                     </div>
                   </div>
                   {/* Mobile amount */}
@@ -723,7 +770,7 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
 
                 {/* Category */}
                 <div className="md:col-span-2 hidden md:block">
-                  <Badge color={categoryColorMap[tx.category] || '#6b7280'}>
+                  <Badge color={categoryColorMap[tx.category] || "#6b7280"}>
                     {tx.category}
                   </Badge>
                 </div>
@@ -761,7 +808,7 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
 
                 {/* Mobile: Category badge + actions row */}
                 <div className="flex items-center gap-2 md:hidden">
-                  <Badge color={categoryColorMap[tx.category] || '#6b7280'}>
+                  <Badge color={categoryColorMap[tx.category] || "#6b7280"}>
                     {tx.category}
                   </Badge>
                   <span
@@ -847,10 +894,9 @@ export default function TransactionList({ initialAccountId }: TransactionListPro
         <div className="glass-card p-5 flex items-center gap-4">
           <div className="w-14 h-14 rounded-full border-4 border-income flex items-center justify-center flex-shrink-0">
             <span className="text-sm font-bold text-income">
-              {totalExpenses > 0
-                ? Math.round((1 - totalExpenses / totalIncome) * 100)
-                : 0}
-              %
+              {totalIncome > 0
+                ? `${Math.round((1 - totalExpenses / totalIncome) * 100)}%`
+                : "–%"}
             </span>
           </div>
           <div>

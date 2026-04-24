@@ -247,7 +247,7 @@ export function CreateAccountDrawer({
                         value={balance}
                         onChange={(e) => setBalance(e.target.value)}
                         type="number"
-                        step="1"
+                        step="0.01"
                         className="w-full pl-8 pr-4 py-3 text-sm rounded-xl !bg-slate-50 border border-slate-200 !text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:!bg-white transition"
                       />
                     </div>

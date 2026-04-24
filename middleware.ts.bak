@@ -1,0 +1,24 @@
+// import { auth } from "@/lib/auth";
+
+/**
+ * Middleware that runs on every request.
+ * Auto-refreshes the JWT token on each visit, extending the 30-day expiry.
+ */
+// export default auth((req) => {
+// Token is automatically refreshed by NextAuth on each request
+// The auth() call in callbacks handles the token refresh logic
+// No additional logic needed here; just returning allows the request to proceed
+// });
+
+export const config = {
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public folder
+         */
+        "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    ],
+};

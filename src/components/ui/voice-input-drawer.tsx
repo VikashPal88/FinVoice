@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
@@ -24,6 +25,7 @@ export function VoiceInputDrawer({
   onClose,
   onTransactionParsed,
 }: VoiceInputDrawerProps) {
+  const { data: session, status } = useSession();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,21 @@ export function VoiceInputDrawer({
   const [error, setError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
+
+  // Check authentication
+  if (status === "loading") {
+    return null;
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-lg p-6">
+          <p className="text-red-600">Please sign in to use voice input</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined") {

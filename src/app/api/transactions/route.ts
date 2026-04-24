@@ -210,6 +210,105 @@ export async function POST(req: Request) {
 
 
 /**
+ * PUT /api/transactions/:id
+ * Updates a single transaction
+ * Expects: { id, description, amount, category, type, date, accountId }
+ */
+export async function PUT(request: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { id, ...updateData } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: "Transaction ID is required" }, { status: 400 });
+        }
+
+        // Find the transaction to verify it belongs to the user
+        const existingTransaction = await PrismaDb.transaction.findUnique({
+            where: { id }
+        });
+
+        if (!existingTransaction) {
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+        }
+
+        if (existingTransaction.userId !== session.user.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+
+        // If accountId changed, validate new account belongs to user
+        if (updateData.accountId && updateData.accountId !== existingTransaction.accountId) {
+            const newAccount = await PrismaDb.financialAccount.findUnique({
+                where: { id: updateData.accountId, userId: session.user.id }
+            });
+            if (!newAccount) {
+                return NextResponse.json({ error: "New account not found" }, { status: 404 });
+            }
+        }
+
+        // Normalize the update data
+        const normalizedUpdate = {
+            ...updateData,
+            amount: updateData.amount ? normalizeTransactionAmount(updateData.amount) : existingTransaction.amount,
+            type: updateData.type ? String(updateData.type).toUpperCase() : existingTransaction.type,
+        };
+
+        // If amount or type changed, recalculate account balance
+        let balanceUpdateRequired = false;
+        let balanceChanges: Record<string, number> = {};
+
+        if (normalizedUpdate.type !== existingTransaction.type || normalizedUpdate.amount !== existingTransaction.amount) {
+            balanceUpdateRequired = true;
+
+            // Reverse old transaction impact
+            const oldImpact = getTransactionImpact(existingTransaction.type, Number(existingTransaction.amount));
+            balanceChanges[existingTransaction.accountId] = -oldImpact;
+
+            // Apply new transaction impact
+            const newImpact = getTransactionImpact(normalizedUpdate.type, normalizedUpdate.amount);
+            balanceChanges[updateData.accountId || existingTransaction.accountId] =
+                (balanceChanges[updateData.accountId || existingTransaction.accountId] ?? 0) + newImpact;
+        }
+
+        // Update transaction and balance in a transaction
+        const updated = await PrismaDb.$transaction(async (tx) => {
+            const updatedTx = await tx.transaction.update({
+                where: { id },
+                data: normalizedUpdate
+            });
+
+            if (balanceUpdateRequired) {
+                for (const [accountId, change] of Object.entries(balanceChanges)) {
+                    await tx.financialAccount.update({
+                        where: { id: accountId },
+                        data: { balance: { increment: change } }
+                    });
+                }
+            }
+
+            return updatedTx;
+        });
+
+        return NextResponse.json(
+            { success: true, data: serializeDecimal(updated) },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error("UPDATE TRANSACTION ERROR:", error);
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : "Internal Server Error" },
+            { status: 500 }
+        );
+    }
+}
+
+
+/**
  * Handles bulk deletion of transactions.
  * Expects a JSON body: { transactionIds: string[] }
  */

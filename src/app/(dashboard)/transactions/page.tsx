@@ -1,5 +1,11 @@
-import TransactionsPage from '@/components/pages/TransactionsPage';
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import TransactionsPage from "@/components/pages/TransactionsPage";
 
-export default function TransactionsPageRoute() {
+export default async function TransactionsPageRoute() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
   return <TransactionsPage />;
 }

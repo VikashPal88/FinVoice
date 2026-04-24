@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileUp,
@@ -33,6 +34,7 @@ export function UploadStatementDrawer({
   onClose,
   onImport,
 }: UploadStatementDrawerProps) {
+  const { data: session, status } = useSession();
   const [file, setFile] = useState<File | null>(null);
   const [textInput, setTextInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,21 @@ export function UploadStatementDrawer({
   const [transactions, setTransactions] = useState<StatementTransaction[]>([]);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check authentication
+  if (status === "loading") {
+    return null; // Don't render until we know auth status
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-lg p-6">
+          <p className="text-red-600">Please sign in to use this feature</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -300,7 +317,7 @@ export function UploadStatementDrawer({
                   <button
                     onClick={handleParse}
                     disabled={loading || (!file && !textInput.trim())}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
@@ -324,7 +341,7 @@ export function UploadStatementDrawer({
                     className="text-red-500 flex-shrink-0"
                   />
                   <p className="text-sm text-red-600 dark:text-red-400">
-                    {error}
+                    {"Something went wrong please try again later."}
                   </p>
                 </div>
               )}
@@ -345,7 +362,8 @@ export function UploadStatementDrawer({
                       </div>
                       <div className="p-3 rounded-xl bg-green-50 dark:bg-green-950/20 text-center border border-green-200 dark:border-green-800">
                         <p className="text-lg font-bold text-green-600">
-                          ₹{displayedSummary.totalIncome.toLocaleString("en-IN")}
+                          ₹
+                          {displayedSummary.totalIncome.toLocaleString("en-IN")}
                         </p>
                         <p className="text-[10px] text-green-600 uppercase tracking-wider">
                           Income
@@ -354,7 +372,9 @@ export function UploadStatementDrawer({
                       <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/20 text-center border border-red-200 dark:border-red-800">
                         <p className="text-lg font-bold text-red-500">
                           ₹
-                          {displayedSummary.totalExpense.toLocaleString("en-IN")}
+                          {displayedSummary.totalExpense.toLocaleString(
+                            "en-IN",
+                          )}
                         </p>
                         <p className="text-[10px] text-red-500 uppercase tracking-wider">
                           Expense

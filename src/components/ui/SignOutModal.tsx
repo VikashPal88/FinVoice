@@ -15,7 +15,7 @@ export default function SignOutModal({ isOpen, onClose }: SignOutModalProps) {
 
   const handleSignOut = async () => {
     setIsLoading(true);
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: window.location.origin });
   };
 
   return (
@@ -38,17 +38,17 @@ export default function SignOutModal({ isOpen, onClose }: SignOutModalProps) {
           >
             {/* Background Accent */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-expense to-rose-400" />
-            
+
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-full bg-expense/10 flex items-center justify-center mb-4">
                 <LogOut size={28} className="text-expense" />
               </div>
-              
+
               <h3 className="text-xl font-bold mb-2">Sign Out</h3>
               <p className="text-sm text-[var(--muted)] mb-6">
                 Are you sure you want to sign out of your account? Your unsaved changes might be lost.
               </p>
-              
+
               <div className="flex w-full gap-3">
                 <button
                   onClick={onClose}

@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FinDash — Smart Finance Dashboard",
+  title: "RupeeTrack — Smart Finance Dashboard",
   description:
     "Track, analyze, and master your personal finances with AI-powered insights, receipt scanning, and voice-based transaction entry. Built for India's digital-first generation.",
   keywords: [

@@ -426,7 +426,7 @@ export default function SettingsPage() {
         className="flex flex-wrap items-center justify-between gap-4 py-6 border-t text-xs text-[var(--muted)]"
         style={{ borderColor: 'var(--glass-border)' }}
       >
-        <p>© 2026 FinDash. All rights reserved.</p>
+        <p>© 2026 RupeeTrack. All rights reserved.</p>
         <div className="flex items-center gap-4">
           <button className="hover:text-[var(--foreground)] transition-colors underline">Privacy Policy</button>
           <button className="hover:text-[var(--foreground)] transition-colors underline">Terms of Service</button>

@@ -15,7 +15,7 @@ export default function AuthLayout({
           </div>
           <div>
             <h1 className="text-lg font-bold gradient-text tracking-tight">
-              FinDash
+              RupeeTrack
             </h1>
           </div>
         </Link>

@@ -102,7 +102,7 @@ function SignInForm() {
             Welcome Back
           </h2>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Sign in to your FinDash account
+            Sign in to your Rupeetrack account
           </p>
         </div>
 
